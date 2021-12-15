@@ -32,10 +32,11 @@ public class FireHook extends FireAbility implements AddonAbility {
     private double radius;
     private double speed;
     private double pullFactor;
-    private final double pullConstant = -0.375;
+    private double liftFactor;
+    private final double pullConstant = -0.1875;
+    private final double liftConstant = 0.4;
     private final double pullReduce = 2.0;
     private int range;
-    private boolean negateFall;
 
     public FireHook(Player player) {
         super(player);
@@ -52,6 +53,7 @@ public class FireHook extends FireAbility implements AddonAbility {
         radius = ConfigManager.getConfig().getDouble(path + "CollisionRadius");
         speed = ConfigManager.getConfig().getDouble(path + "Speed");
         pullFactor = pullConstant * ConfigManager.getConfig().getDouble(path + "PullFactor");
+        liftFactor = liftConstant * ConfigManager.getConfig().getDouble(path + "LiftFactor");
         range = ConfigManager.getConfig().getInt(path + "Range");
         
         // define location variables
@@ -108,9 +110,11 @@ public class FireHook extends FireAbility implements AddonAbility {
                 // Calculate pull vector
                 Vector playerLoc = player.getLocation().toVector();
                 Vector entityLoc = entity.getLocation().toVector();
-                Vector pullDir = new Vector(entityLoc.getX() - playerLoc.getX(),
+                Vector pullDir = new Vector(
+                    entityLoc.getX() - playerLoc.getX(),
                     entityLoc.getY() - playerLoc.getY(),
                     entityLoc.getZ() - playerLoc.getZ());
+
                 //? This could be optimized, sqrt function takes a while to calculate
                 double magnitude = Math.sqrt(Math.pow(pullDir.getX(), 2) +
                     Math.pow(pullDir.getY(), 2) +
@@ -119,7 +123,7 @@ public class FireHook extends FireAbility implements AddonAbility {
                 pullDir = pullDir.normalize();
                 Vector pull = new Vector(
                     pullDir.getX() * magnitude * pullFactor,
-                    pullDir.getY() * magnitude * pullFactor / pullReduce,
+                    liftFactor + pullDir.getY() * magnitude * pullFactor / pullReduce,
                     pullDir.getZ() * magnitude * pullFactor
                     );
 
@@ -127,6 +131,7 @@ public class FireHook extends FireAbility implements AddonAbility {
                 DamageHandler.damageEntity(entity, damage, this);
                 // Apply pull velocity on entity
                 GeneralMethods.setVelocity(this, entity, pull);
+                
                 remove();
             }
         }
@@ -185,7 +190,7 @@ public class FireHook extends FireAbility implements AddonAbility {
 
     @Override
     public String getVersion() {
-        return "1.0.1";
+        return "1.1.0";
     }
 
     @Override
@@ -205,11 +210,12 @@ public class FireHook extends FireAbility implements AddonAbility {
         ProjectKorra.log.info(getName() + " " + getVersion() + " by " + getAuthor() + " loaded.");
         
         // Add default config values in conf file
-        ConfigManager.getConfig().addDefault(path + "Cooldown", 6000);
-        ConfigManager.getConfig().addDefault(path + "Damage", 1.0);
-        ConfigManager.getConfig().addDefault(path + "CollisionRadius", 1.0);
+        ConfigManager.getConfig().addDefault(path + "Cooldown", 6500);
+        ConfigManager.getConfig().addDefault(path + "Damage", 0.0);
+        ConfigManager.getConfig().addDefault(path + "CollisionRadius", 1.5);
         ConfigManager.getConfig().addDefault(path + "Speed", 1.5);
-        ConfigManager.getConfig().addDefault(path + "PullFactor", -1.0);
+        ConfigManager.getConfig().addDefault(path + "PullFactor", 1.0);
+        ConfigManager.getConfig().addDefault(path + "LiftFactor", 1.0);
         ConfigManager.getConfig().addDefault(path + "Range", 25);
         // Save values to conf file
         ConfigManager.defaultConfig.save();
